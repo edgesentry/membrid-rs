@@ -60,46 +60,7 @@ membrane/
 
 Key: `src/arrow/` module owns all Arrow schema definitions and `RecordBatch` ↔ domain type conversions. This is the single place that defines the Lance table schemas — all other modules import from here.
 
----
-
-## Implementation Phases
-
-### Phase 1 — Fact Memory Working
-
-**In scope:**
-- `WorkingMemory` (in-process ring buffer, no external deps)
-- `FactStore` trait + LanceDB implementation (`facts.lance`)
-- `EmbeddingEngine` trait + `NoopEmbeddingEngine` (tests) + mistral.rs impl
-- `EmbeddingCache` (in-memory HashMap)
-- `src/arrow/` module: Arrow schema for `facts.lance`, `RecordBatch` ↔ `Episode` conversions
-- `store_episode()`, `retrieve()` (ANN only), `assemble_context()`
-- `InMemoryFactStore` for unit tests (no LanceDB process needed)
-
-**Out of scope:**
-- DuckDB `LifecycleStore`
-- LanceGraph `RelationshipStore`
-- Entity extraction / resolution
-- `consolidate()`, `summarize()`
-- PyO3, AuditBridge
-- Exact token counting (character heuristic only)
-
-### Phase 2 — Lifecycle and Relationships
-
-- `LifecycleStore` (DuckDB): `fact_lifecycle`, `embedding_cache`, `action_patterns`, `consolidation_jobs` tables
-- TTL-based `forget()`: DuckDB TTL sweep → delete from LanceDB by id batch
-- `RelationshipStore` (LanceGraph): `entities.lance` + edge datasets
-- Lifecycle filter in `retrieve()`: DuckDB removes expired ids before returning results
-- Rule-based NER and entity resolution (no model required)
-- DuckDB-persisted `EmbeddingCache`
-- Gemma 4 `tokenizer.json` for accurate token counting
-- DuckDB federation: `read_parquet()` on `facts.lance` for cross-store queries
-
-### Phase 3 — Automation and Integration
-
-- `consolidate()` background tokio task (DuckDB drives job scheduling)
-- `summarize()` (mistral.rs compresses old episodes into extracted facts)
-- edgesentry-audit `AuditBridge`
-- PyO3 bindings (arktrace Python integration)
+See [roadmap.md](roadmap.md) for implementation phases, milestone checklists, and acceptance criteria.
 
 ---
 

@@ -64,35 +64,8 @@ src/
 
 Test stubs: `InMemoryFactStore`, `NoopEmbeddingEngine` — no external deps required.
 
-## Feature flags
-
-| Flag | Default | Enables |
-|------|---------|---------|
-| `async` | ON | tokio |
-| `store-lance` | ON | LanceDB + LanceGraph |
-| `store-duck` | ON | DuckDB |
-| `embedding-local` | OFF | mistral.rs |
-| `pyo3-bindings` | OFF | Python bindings |
-| `audit-bridge` | OFF | edgesentry-audit |
-
-`arrow-array` and `arrow-schema` are always present (non-optional).
-
-## Build and test
-
-```bash
-cargo test                                                      # unit tests, no deps
-cargo test --features store-lance                               # LanceDB integration
-cargo test --features store-duck                                # DuckDB integration
-cargo run --example basic_store_retrieve --features "store-lance store-duck embedding-local"
-```
-
-## Implementation status
-
-| Phase | Scope | Status |
-|-------|-------|--------|
-| 1 | WorkingMemory + FactStore (LanceDB) + EmbeddingEngine + context assembly | In design |
-| 2 | LifecycleStore (DuckDB) + RelationshipStore (LanceGraph) + entity extraction + TTL | Planned |
-| 3 | Consolidation · summarization · AuditBridge · PyO3 bindings | Planned |
+See [docs/integration.md](docs/integration.md) for feature flags and Cargo.toml.
+See [docs/roadmap.md](docs/roadmap.md) for implementation status, build commands, and milestone checklists.
 
 ## Docs index
 
@@ -106,3 +79,4 @@ cargo run --example basic_store_retrieve --features "store-lance store-duck embe
 | [docs/integration.md](docs/integration.md) | Feature flags, Cargo.toml, edgesentry-audit / arktrace / edgesentry-inspect integration |
 | [docs/implementation.md](docs/implementation.md) | Crate layout, implementation phases, reference files, verification commands |
 | [docs/automation-guidelines.md](docs/automation-guidelines.md) | A/B/C/D automation levels, design checklist, recommended configs per use case |
+| [docs/roadmap.md](docs/roadmap.md) | Milestone checklist for Phase 1/2/3, acceptance criteria, future considerations |
