@@ -4987,7 +4987,7 @@ dependencies = [
  "arrow-array 53.4.0",
  "arrow-buffer 53.4.1",
  "arrow-cast 58.1.0",
- "arrow-schema 53.4.1",
+ "arrow-schema 58.1.0",
  "blake3",
  "duckdb",
  "hex",
