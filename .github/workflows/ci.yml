@@ -53,6 +53,14 @@ jobs:
           key: ${{ runner.os }}-cargo-target-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-target-
 
+      - name: Install protoc (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y protobuf-compiler
+
+      - name: Install protoc (macOS)
+        if: runner.os == 'macOS'
+        run: brew install protobuf
+
       - name: Build (release)
         run: cargo build --release
 
@@ -143,6 +151,9 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
+      - name: Install protoc
+        run: sudo apt-get install -y protobuf-compiler
+
       - name: Clippy (deny warnings)
         run: cargo clippy --all-targets --all-features -- -D warnings
 
@@ -179,6 +190,9 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Install protoc
+        run: sudo apt-get install -y protobuf-compiler
 
       - name: Install cargo-llvm-cov
         run: cargo llvm-cov --version 2>/dev/null || cargo install cargo-llvm-cov --locked
@@ -230,6 +244,9 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Install protoc
+        run: sudo apt-get install -y protobuf-compiler
 
       - name: Publish dry-run
         run: cargo publish --dry-run --locked

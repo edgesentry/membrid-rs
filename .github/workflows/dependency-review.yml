@@ -26,5 +26,5 @@ jobs:
         with:
           retry-on-snapshot-warnings: true
           fail-on-severity: high
-          allow-licenses: MIT, Apache-2.0, ISC, MIT-0, BSD-2-Clause, BSD-3-Clause, Unicode-3.0, CC0-1.0, Zlib, CDLA-Permissive-2.0
+          allow-licenses: MIT, Apache-2.0, ISC, MIT-0, BSD-2-Clause, BSD-3-Clause, Unicode-3.0, CC0-1.0, Zlib, CDLA-Permissive-2.0, MPL-2.0, 0BSD, BSL-1.0, NCSA, LicenseRef-bad-mitapache-2.0, LicenseRef-bad-apache-2.0mit
           comment-summary-in-pr: always

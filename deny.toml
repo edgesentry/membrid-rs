@@ -25,6 +25,11 @@ allow = [
   "ISC",
   "MIT-0",
   "CDLA-Permissive-2.0",
+  # Transitive deps from lancedb / duckdb / mistralrs
+  "MPL-2.0",   # option-ext (dirs), symphonia (mistralrs)
+  "0BSD",      # mock_instant (moka/lancedb), interprocess
+  "BSL-1.0",   # xxhash-rust (Boost Software License — permissive)
+  "NCSA",      # libfuzzer-sys
 ]
 
 [sources]
