@@ -15,8 +15,6 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
-  SCCACHE_GHA_ENABLED: "true"
-  RUSTC_WRAPPER: sccache
 
 jobs:
   build_and_test:
@@ -52,7 +50,7 @@ jobs:
           key: ${{ matrix.os }}
 
       - name: Install protoc (Linux)
-        if: matrix.heavy_features == true
+        if: ${{ matrix.heavy_features == true }}
         run: sudo apt-get install -y protobuf-compiler
 
       - name: Build (release)
@@ -62,15 +60,15 @@ jobs:
         run: cargo test
 
       - name: Unit tests (store-lance)
-        if: matrix.heavy_features == true
+        if: ${{ matrix.heavy_features == true }}
         run: cargo test --features store-lance
 
       - name: Unit tests (store-duck)
-        if: matrix.heavy_features == true
+        if: ${{ matrix.heavy_features == true }}
         run: cargo test --features store-duck
 
       - name: Unit tests (all features)
-        if: matrix.heavy_features == true
+        if: ${{ matrix.heavy_features == true }}
         run: cargo test --features "store-lance store-duck"
 
   license_check:
