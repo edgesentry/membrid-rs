@@ -45,9 +45,9 @@ jobs:
         run: rustup show  # reads rust-toolchain.toml
 
       - name: sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.7
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.0.9
 
-      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890c1ea2d41984da6d  # v2
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4  # v2.9.1
         with:
           key: ${{ matrix.os }}
 
@@ -86,7 +86,7 @@ jobs:
       - name: Setup Rust
         run: rustup show
 
-      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890c1ea2d41984da6d  # v2
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4  # v2.9.1
 
       - name: Install cargo-deny
         run: cargo deny --version 2>/dev/null || cargo install cargo-deny --locked
@@ -127,9 +127,9 @@ jobs:
         run: rustup show
 
       - name: sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.7
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.0.9
 
-      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890c1ea2d41984da6d  # v2
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4  # v2.9.1
 
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
@@ -160,9 +160,9 @@ jobs:
         run: rustup show && rustup component add llvm-tools-preview
 
       - name: sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.7
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.0.9
 
-      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890c1ea2d41984da6d  # v2
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4  # v2.9.1
 
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
@@ -207,9 +207,9 @@ jobs:
         run: rustup show
 
       - name: sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.7
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.0.9
 
-      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890c1ea2d41984da6d  # v2
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4  # v2.9.1
 
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
