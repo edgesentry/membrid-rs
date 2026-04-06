@@ -1,0 +1,180 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+
+jobs:
+  create_tag:
+    name: Bump version and create tag
+    uses: ./.github/workflows/auto-version-tag.yml
+    secrets: inherit
+    permissions:
+      contents: write
+
+  quality_gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    needs: create_tag
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          ref: ${{ needs.create_tag.outputs.tag_name }}
+
+      - name: Setup Rust
+        run: rustup show  # reads rust-toolchain.toml and installs required toolchain
+
+      - name: Cache Rust artifacts
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Install protoc
+        run: sudo apt-get install -y protobuf-compiler
+
+      - name: Build (release)
+        run: cargo build --release --locked
+
+      - name: Unit tests (all features)
+        run: cargo test --features "store-lance store-duck" --locked
+
+      - name: Clippy (deny warnings)
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Install cargo-deny
+        run: cargo deny --version 2>/dev/null || cargo install cargo-deny --locked
+
+      - name: License check
+        run: cargo deny check licenses
+
+      - name: Deny vulnerable advisories
+        run: cargo deny check advisories
+
+      - name: Deny policy violations (bans + sources)
+        run: cargo deny check bans sources
+
+  publish_crate:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    needs: [create_tag, quality_gate]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          ref: ${{ needs.create_tag.outputs.tag_name }}
+
+      - name: Setup Rust
+        run: rustup show
+
+      - name: Cache Rust artifacts
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Install protoc
+        run: sudo apt-get install -y protobuf-compiler
+
+      - name: Check CRATES_IO_TOKEN is set
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        run: |
+          if [ -z "${CARGO_REGISTRY_TOKEN}" ]; then
+            echo "CRATES_IO_TOKEN secret is required for release workflow"
+            exit 1
+          fi
+
+      - name: Publish membrid
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        run: |
+          VERSION=$(cargo metadata --no-deps --format-version 1 | \
+            python3 -c "import json,sys; print(json.load(sys.stdin)['packages'][0]['version'])")
+          URL="https://crates.io/api/v1/crates/membrid/${VERSION}"
+
+          if curl --silent --show-error --fail "$URL" >/dev/null 2>&1; then
+            echo "membrid@${VERSION} already exists on crates.io. Skipping."
+          else
+            echo "Publishing membrid@${VERSION} ..."
+            cargo publish --locked
+          fi
+
+  generate_sbom:
+    name: Generate SBOM (CycloneDX)
+    runs-on: ubuntu-latest
+    needs: [create_tag, quality_gate]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          ref: ${{ needs.create_tag.outputs.tag_name }}
+
+      - name: Setup Rust
+        run: rustup show
+
+      - name: Install cargo-cyclonedx
+        run: cargo install cargo-cyclonedx --locked
+
+      - name: Generate CycloneDX SBOM
+        run: cargo cyclonedx --format json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: sbom
+          path: "*.cdx.json"
+
+  publish_github_release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs: [create_tag, publish_crate, generate_sbom]
+    if: ${{ needs.publish_crate.result == 'success' }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download SBOM artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        with:
+          name: sbom
+          path: dist
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ needs.create_tag.outputs.tag_name }}
+        run: |
+          gh release create "${TAG_NAME}" \
+            --repo "${{ github.repository }}" \
+            --title "${TAG_NAME}" \
+            --generate-notes \
+            dist/*.cdx.json
