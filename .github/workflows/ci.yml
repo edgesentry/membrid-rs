@@ -56,8 +56,16 @@ jobs:
             ${{ matrix.os }}-cargo-
 
       - name: Install protoc (Linux)
-        if: ${{ matrix.heavy_features == true }}
+        if: runner.os == 'Linux'
         run: sudo apt-get install -y protobuf-compiler
+
+      - name: Install protoc (macOS)
+        if: runner.os == 'macOS'
+        run: brew install protobuf
+
+      - name: Install protoc (Windows)
+        if: runner.os == 'Windows'
+        run: choco install protoc --yes
 
       - name: Unit tests (default features)
         run: cargo test
