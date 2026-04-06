@@ -1,0 +1,42 @@
+[package]
+name = "membrid"
+version = "0.1.0"
+edition = "2021"
+description = "LLM memory management for edge AI with small models"
+license = "MIT OR Apache-2.0"
+
+[features]
+default = ["async", "store-lance", "store-duck"]
+async = ["dep:tokio"]
+embedding-local = ["dep:mistralrs", "dep:mistralrs-core"]
+store-lance = ["dep:lancedb", "dep:arrow-cast"]
+store-duck = ["dep:duckdb"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+blake3 = "1.5"
+postcard = { version = "1.1", default-features = false, features = ["alloc"] }
+tracing = "0.1"
+hex = "0.4"
+uuid = { version = "1", features = ["v4"] }
+
+# Arrow is always present — it is the IO common language
+arrow-array  = { version = "53" }
+arrow-buffer = { version = "53" }
+arrow-schema = { version = "53" }
+
+tokio = { version = "1", features = ["rt", "sync", "macros", "time"], optional = true }
+
+lancedb    = { version = "0.27", optional = true }
+arrow-cast = { version = "53",   optional = true }
+
+duckdb = { version = "1.1", features = ["bundled"], optional = true }
+
+mistralrs      = { version = "0.8", optional = true }
+mistralrs-core = { version = "0.8", optional = true }
+
+[dev-dependencies]
+tokio    = { version = "1", features = ["rt-multi-thread", "macros"] }
+tempfile = "3"
