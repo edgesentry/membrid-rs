@@ -1,0 +1,30 @@
+name: Dependency Review
+
+on:
+  pull_request:
+
+permissions: {}
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+
+      - name: Submit dependency snapshot
+        uses: advanced-security/component-detection-dependency-submission-action@9c110eb34dee187cd9eca76a652b9f6a0ed22927  # v0.1.1
+        continue-on-error: true
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48  # v4.9.0
+        with:
+          retry-on-snapshot-warnings: true
+          fail-on-severity: high
+          allow-licenses: MIT, Apache-2.0, ISC, MIT-0, BSD-2-Clause, BSD-3-Clause, Unicode-3.0, CC0-1.0, Zlib, CDLA-Permissive-2.0, MPL-2.0, 0BSD, BSL-1.0, NCSA, LicenseRef-bad-mitapache-2.0, LicenseRef-bad-apache-2.0mit
+          comment-summary-in-pr: always

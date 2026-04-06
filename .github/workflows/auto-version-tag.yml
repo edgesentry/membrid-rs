@@ -1,0 +1,190 @@
+name: Auto Version Tag
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      tag_name:
+        description: "The created vX.Y.Z tag"
+        value: ${{ jobs.bump_and_tag.outputs.tag_name }}
+
+concurrency:
+  group: auto-version-tag-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  bump_and_tag:
+    name: Bump version and create tag
+    if: ${{ github.ref_name == 'main' }}
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.set_tag.outputs.tag_name }}
+
+    steps:
+      - name: Generate Token
+        id: generate_token
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547  # v1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout target SHA
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Setup Rust
+        run: rustup show  # reads rust-toolchain.toml and installs required toolchain
+
+      - name: Prepare git metadata
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --tags --force
+
+      - name: Detect release commit
+        id: guard
+        run: |
+          HEAD_SUBJECT=$(git log -1 --pretty=%s)
+          if [[ "$HEAD_SUBJECT" == chore\(release\):* ]]; then
+            echo "is_release_commit=true" >> "$GITHUB_OUTPUT"
+            echo "Release commit detected, skipping bump and tag steps."
+          else
+            echo "is_release_commit=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compute next version
+        id: semver
+        shell: bash
+        if: ${{ steps.guard.outputs.is_release_commit != 'true' }}
+        run: |
+          LAST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n1 || true)
+          CURRENT_VERSION=$(python3 - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('Cargo.toml').read_text(encoding='utf-8')
+          section = None
+          for line in text.splitlines():
+            s = line.strip()
+            if s.startswith('[') and s.endswith(']'):
+              section = s
+              continue
+            if section == '[package]' and s.startswith('version = '):
+              m = re.search(r'"([0-9]+\.[0-9]+\.[0-9]+)"', s)
+              if m:
+                print(m.group(1))
+                break
+          PY
+          )
+
+          if [[ -z "$LAST_TAG" ]]; then
+            echo "No previous tag found. Using current version: $CURRENT_VERSION"
+            NEXT_VERSION="$CURRENT_VERSION"
+            BUMP_KIND="initial"
+          else
+            RANGE="${LAST_TAG}..HEAD"
+            COMMITS=$(git log --format='%s%n%b' "$RANGE")
+
+            BUMP_KIND="patch"
+            if echo "$COMMITS" | grep -Eiq 'BREAKING CHANGE|^[a-zA-Z0-9_-]+(\(.+\))?!:'; then
+              BUMP_KIND="major"
+            elif echo "$COMMITS" | grep -Eiq '^feat(\(.+\))?:'; then
+              BUMP_KIND="minor"
+            fi
+
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            case "$BUMP_KIND" in
+              major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+              minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+              patch) PATCH=$((PATCH + 1)) ;;
+            esac
+            NEXT_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          fi
+
+          echo "last_tag=$LAST_TAG" >> "$GITHUB_OUTPUT"
+          echo "current_version=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "next_version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "bump_kind=$BUMP_KIND" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether tag already exists
+        id: tag_check
+        if: ${{ steps.guard.outputs.is_release_commit != 'true' }}
+        run: |
+          NEXT_TAG="v${{ steps.semver.outputs.next_version }}"
+          if git show-ref --verify --quiet "refs/tags/$NEXT_TAG" || \
+             git ls-remote --exit-code --tags origin "refs/tags/$NEXT_TAG" >/dev/null 2>&1; then
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag $NEXT_TAG already exists."
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fail if tag already exists
+        if: ${{ steps.guard.outputs.is_release_commit != 'true' && steps.tag_check.outputs.tag_exists == 'true' }}
+        run: |
+          echo "Tag v${{ steps.semver.outputs.next_version }} already exists. Merge more commits before releasing."
+          exit 1
+
+      - name: Update version in Cargo.toml
+        if: ${{ steps.guard.outputs.is_release_commit != 'true' && steps.tag_check.outputs.tag_exists != 'true' && steps.semver.outputs.next_version != steps.semver.outputs.current_version }}
+        env:
+          NEXT_VERSION: ${{ steps.semver.outputs.next_version }}
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, os
+
+          next_version = os.environ['NEXT_VERSION']
+          path = Path('Cargo.toml')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          section = None
+          updated = []
+          for line in lines:
+            stripped = line.strip()
+            if stripped.startswith('[') and stripped.endswith(']'):
+              section = stripped
+              updated.append(line)
+              continue
+            if section == '[package]' and stripped.startswith('version = '):
+              line = re.sub(r'"[0-9]+\.[0-9]+\.[0-9]+"', f'"{next_version}"', line)
+            updated.append(line)
+          path.write_text('\n'.join(updated) + '\n', encoding='utf-8')
+          PY
+
+      - name: Sync Cargo.lock
+        if: ${{ steps.guard.outputs.is_release_commit != 'true' && steps.tag_check.outputs.tag_exists != 'true' && steps.semver.outputs.next_version != steps.semver.outputs.current_version }}
+        run: cargo generate-lockfile
+
+      - name: Commit version bump
+        if: ${{ steps.guard.outputs.is_release_commit != 'true' && steps.tag_check.outputs.tag_exists != 'true' && steps.semver.outputs.next_version != steps.semver.outputs.current_version }}
+        env:
+          NEXT_VERSION: ${{ steps.semver.outputs.next_version }}
+        run: |
+          git add Cargo.toml Cargo.lock
+          git commit -m "chore(release): v${NEXT_VERSION} [skip ci]"
+
+      - name: Push release commit to main
+        if: ${{ steps.guard.outputs.is_release_commit != 'true' && steps.tag_check.outputs.tag_exists != 'true' && steps.semver.outputs.next_version != steps.semver.outputs.current_version }}
+        run: git push origin HEAD:main
+
+      - name: Create and push tag
+        if: ${{ steps.guard.outputs.is_release_commit != 'true' && steps.tag_check.outputs.tag_exists != 'true' }}
+        env:
+          NEXT_VERSION: ${{ steps.semver.outputs.next_version }}
+        run: |
+          git tag "v${NEXT_VERSION}"
+          git push origin "v${NEXT_VERSION}"
+
+      - name: Set tag output
+        id: set_tag
+        if: ${{ steps.guard.outputs.is_release_commit != 'true' && steps.tag_check.outputs.tag_exists != 'true' }}
+        env:
+          NEXT_VERSION: ${{ steps.semver.outputs.next_version }}
+        run: echo "tag_name=v${NEXT_VERSION}" >> "$GITHUB_OUTPUT"

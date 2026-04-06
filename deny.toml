@@ -1,0 +1,42 @@
+[graph]
+targets = []
+
+[advisories]
+version = 2
+db-urls = ["https://github.com/rustsec/advisory-db"]
+ignore = [
+  # paste is unmaintained but pulled in transitively via lancedb → lance → datafusion-common.
+  # No direct dependency; cannot upgrade. Track: https://rustsec.org/advisories/RUSTSEC-2024-0436
+  { id = "RUSTSEC-2024-0436", reason = "transitive dep via lancedb/datafusion; no upgrade path available" },
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "warn"
+highlight = "all"
+
+[licenses]
+private = { ignore = true }
+confidence-threshold = 0.8
+allow = [
+  "MIT",
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "Unicode-3.0",
+  "CC0-1.0",
+  "Zlib",
+  "ISC",
+  "MIT-0",
+  "CDLA-Permissive-2.0",
+  # Transitive deps from lancedb / duckdb / mistralrs
+  "MPL-2.0",   # option-ext (dirs), symphonia (mistralrs)
+  "0BSD",      # mock_instant (moka/lancedb), interprocess
+  "BSL-1.0",   # xxhash-rust (Boost Software License — permissive)
+  "NCSA",      # libfuzzer-sys
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
