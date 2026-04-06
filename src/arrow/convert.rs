@@ -12,7 +12,6 @@ use arrow_array::{
     BinaryArray, FixedSizeListArray, Float32Array, Int64Array, ListArray, RecordBatch,
     StringArray,
 };
-use arrow_schema::Schema;
 use std::sync::Arc;
 
 // ---------------------------------------------------------------------------
@@ -79,7 +78,7 @@ pub fn episodes_to_record_batch(
             Arc::new(entity_ids),
         ],
     )
-    .map_err(|e| MembridError::Arrow(e))?;
+    .map_err(MembridError::Arrow)?;
 
     Ok(batch)
 }
@@ -126,7 +125,7 @@ pub fn record_batch_to_retrieved(
         .ok_or_else(|| MembridError::other("'timestamp_ms' column is not Int64"))?;
 
     let mut results = Vec::with_capacity(n);
-    for i in 0..n {
+    for (i, &score) in scores.iter().enumerate() {
         let raw_id = id_col.value(i);
         let mut id: MemoryId = [0u8; 16];
         let copy_len = raw_id.len().min(16);
@@ -135,7 +134,7 @@ pub fn record_batch_to_retrieved(
         results.push(RetrievedMemory {
             id,
             content: content_col.value(i).to_owned(),
-            score: scores[i],
+            score,
             tier: tier.clone(),
             timestamp_ms: timestamp_col.value(i) as u64,
             metadata: serde_json::Value::Null,
@@ -168,7 +167,7 @@ fn build_fixed_size_list_with_validity(
                 valid_bits.push(true);
             }
             None => {
-                flat.extend(std::iter::repeat(0.0f32).take(dim));
+                flat.extend(std::iter::repeat_n(0.0f32, dim));
                 valid_bits.push(false);
             }
         }
@@ -207,7 +206,7 @@ fn build_string_list<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{EpisodeMetadata, Role};
+    use crate::types::Role;
 
     fn make_episode(content: &str, dims: usize) -> Episode {
         let mut ep = Episode::new("test-session", Role::User, content);
@@ -218,7 +217,7 @@ mod tests {
     #[test]
     fn round_trip_episode_to_record_batch() {
         let ep = make_episode("hello world", 768);
-        let batch = episodes_to_record_batch(&[ep.clone()], 768).unwrap();
+        let batch = episodes_to_record_batch(std::slice::from_ref(&ep), 768).unwrap();
         assert_eq!(batch.num_rows(), 1);
 
         let scores = vec![1.0f32];
