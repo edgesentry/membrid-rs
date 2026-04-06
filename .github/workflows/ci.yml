@@ -15,6 +15,8 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: sccache
 
 jobs:
   build_and_test:
@@ -25,45 +27,33 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          # Linux: full suite including heavy C-compiled features
+          - os: ubuntu-latest
+            heavy_features: true
+          # macOS / Windows: pure Rust only — avoids recompiling duckdb + lancedb C code
+          - os: macos-latest
+            heavy_features: false
+          - os: windows-latest
+            heavy_features: false
 
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Setup Rust
-        run: rustup update stable && rustup default stable
+        run: rustup show  # reads rust-toolchain.toml
 
-      - name: Cache Cargo registry
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-registry-
+      - name: sccache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.7
 
-      - name: Cache build artifacts
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890c1ea2d41984da6d  # v2
         with:
-          path: |
-            ~/.cargo/bin/
-            target/
-          key: ${{ runner.os }}-cargo-target-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-target-
+          key: ${{ matrix.os }}
 
       - name: Install protoc (Linux)
-        if: runner.os == 'Linux'
+        if: matrix.heavy_features == true
         run: sudo apt-get install -y protobuf-compiler
-
-      - name: Install protoc (macOS)
-        if: runner.os == 'macOS'
-        run: brew install protobuf
-
-      - name: Install protoc (Windows)
-        if: runner.os == 'Windows'
-        run: choco install protoc --yes
 
       - name: Build (release)
         run: cargo build --release
@@ -72,12 +62,15 @@ jobs:
         run: cargo test
 
       - name: Unit tests (store-lance)
+        if: matrix.heavy_features == true
         run: cargo test --features store-lance
 
       - name: Unit tests (store-duck)
+        if: matrix.heavy_features == true
         run: cargo test --features store-duck
 
-      - name: Unit tests (all default features)
+      - name: Unit tests (all features)
+        if: matrix.heavy_features == true
         run: cargo test --features "store-lance store-duck"
 
   license_check:
@@ -91,19 +84,9 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Setup Rust
-        run: rustup update stable && rustup default stable
+        run: rustup show
 
-      - name: Cache Rust artifacts
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890c1ea2d41984da6d  # v2
 
       - name: Install cargo-deny
         run: cargo deny --version 2>/dev/null || cargo install cargo-deny --locked
@@ -122,7 +105,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Setup Rust
-        run: rustup update stable && rustup default stable
+        run: rustup show
 
       - name: Install cargo-audit
         run: cargo audit --version 2>/dev/null || cargo install cargo-audit --locked
@@ -141,19 +124,12 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Setup Rust
-        run: rustup update stable && rustup default stable
+        run: rustup show
 
-      - name: Cache Rust artifacts
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+      - name: sccache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.7
+
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890c1ea2d41984da6d  # v2
 
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
@@ -181,19 +157,12 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Setup Rust
-        run: rustup update stable && rustup default stable && rustup component add llvm-tools-preview
+        run: rustup show && rustup component add llvm-tools-preview
 
-      - name: Cache Rust artifacts
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+      - name: sccache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.7
+
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890c1ea2d41984da6d  # v2
 
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
@@ -235,19 +204,12 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
       - name: Setup Rust
-        run: rustup update stable && rustup default stable
+        run: rustup show
 
-      - name: Cache Rust artifacts
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+      - name: sccache
+        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.7
+
+      - uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890c1ea2d41984da6d  # v2
 
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
