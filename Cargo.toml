@@ -31,7 +31,7 @@ hex = "0.4"
 uuid = { version = "1", features = ["v4"] }
 
 # Arrow is always present — it is the IO common language
-arrow-array  = { version = "53" }
+arrow-array  = { version = "58" }
 arrow-buffer = { version = "53" }
 arrow-schema = { version = "53" }
 arrow-select = { version = "53" }
