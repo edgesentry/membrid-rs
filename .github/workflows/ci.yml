@@ -29,7 +29,7 @@ jobs:
           # Linux: full suite including heavy C-compiled features
           - os: ubuntu-latest
             heavy_features: true
-          # macOS / Windows: pure Rust only — avoids recompiling duckdb + lancedb C code
+          # macOS / Windows: pure Rust only -- avoids recompiling duckdb + lancedb C code
           - os: macos-latest
             heavy_features: false
           - os: windows-latest
@@ -42,12 +42,18 @@ jobs:
       - name: Setup Rust
         run: rustup show  # reads rust-toolchain.toml
 
-      - name: sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.0.9
-
-      - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2.8.2
+      - name: Cache Rust artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
         with:
-          key: ${{ matrix.os }}
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.os }}-cargo-
 
       - name: Install protoc (Linux)
         if: ${{ matrix.heavy_features == true }}
@@ -84,7 +90,18 @@ jobs:
       - name: Setup Rust
         run: rustup show
 
-      - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2.8.2
+      - name: Cache Rust artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ubuntu-latest-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ubuntu-latest-cargo-
 
       - name: Install cargo-deny
         run: cargo deny --version 2>/dev/null || cargo install cargo-deny --locked
@@ -124,10 +141,18 @@ jobs:
       - name: Setup Rust
         run: rustup show
 
-      - name: sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.0.9
-
-      - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2.8.2
+      - name: Cache Rust artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ubuntu-latest-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ubuntu-latest-cargo-
 
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
@@ -157,10 +182,18 @@ jobs:
       - name: Setup Rust
         run: rustup show && rustup component add llvm-tools-preview
 
-      - name: sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.0.9
-
-      - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2.8.2
+      - name: Cache Rust artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ubuntu-latest-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ubuntu-latest-cargo-
 
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
@@ -204,10 +237,18 @@ jobs:
       - name: Setup Rust
         run: rustup show
 
-      - name: sccache
-        uses: mozilla-actions/sccache-action@7d986dd989559c6ecdb630a3fd2557667be217ad  # v0.0.9
-
-      - uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5  # v2.8.2
+      - name: Cache Rust artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ubuntu-latest-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ubuntu-latest-cargo-
 
       - name: Install protoc
         run: sudo apt-get install -y protobuf-compiler
