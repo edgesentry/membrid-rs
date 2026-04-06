@@ -4,7 +4,11 @@ targets = []
 [advisories]
 version = 2
 db-urls = ["https://github.com/rustsec/advisory-db"]
-ignore = []
+ignore = [
+  # paste is unmaintained but pulled in transitively via lancedb → lance → datafusion-common.
+  # No direct dependency; cannot upgrade. Track: https://rustsec.org/advisories/RUSTSEC-2024-0436
+  { id = "RUSTSEC-2024-0436", reason = "transitive dep via lancedb/datafusion; no upgrade path available" },
+]
 
 [bans]
 multiple-versions = "warn"
