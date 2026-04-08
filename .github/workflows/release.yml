@@ -110,13 +110,13 @@ jobs:
             exit 1
           fi
 
-      - name: Publish membrid
+      - name: Publish membrid-rs
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
         run: |
           VERSION=$(cargo metadata --no-deps --format-version 1 | \
             python3 -c "import json,sys; print(json.load(sys.stdin)['packages'][0]['version'])")
-          URL="https://crates.io/api/v1/crates/membrid/${VERSION}"
+          URL="https://crates.io/api/v1/crates/membrid-rs/${VERSION}"
 
           if curl --silent --show-error --fail "$URL" >/dev/null 2>&1; then
             echo "membrid@${VERSION} already exists on crates.io. Skipping."

@@ -10,10 +10,32 @@ See [plan.md](plan.md) for full design rationale, storage schemas, trait definit
 
 ---
 
+## The name
+
+**membrid** is a portmanteau of two concepts that define the project's design philosophy.
+
+### Membrane
+
+The name reflects the core role of this library: *complementing* small models from the outside rather than making them larger.
+
+- **Selective permeability** — just as a cell membrane filters what enters and exits, membrid selects only the most relevant context for the model to process. Information that isn't useful is kept out; what is useful is surfaced efficiently. This is the *information diet* principle.
+- **Protective boundary** — on resource-constrained edge devices, the model cannot process everything. membrid acts as a boundary layer that shields the model's reasoning capacity from information overload.
+
+### Hybrid
+
+The `id` suffix captures the architectural and data-flow design.
+
+- **Multi-backend unification** — membrid bridges three fundamentally different storage systems — LanceDB (vector), LanceGraph (graph), and DuckDB (SQL analytics) — treating them as a single coherent memory layer rather than three separate databases.
+- **Zero-copy bridging** — Apache Arrow is the common language across all components. Data moves between backends without serialization or copying, enabling the kind of *hybrid data flow* that would otherwise require multiple format conversions.
+
+Together: a membrane that manages information selection, built on a hybrid of storage primitives.
+
+---
+
 ## Quick start
 
 ```rust
-use membrane::{MembraneEngine, MembraneConfig, Episode, Role};
+use membrid::{MembraneEngine, MembraneConfig, Episode, Role};
 
 let engine = MembraneEngine::open("./data/memory", MembraneConfig::default()).await?;
 
@@ -59,16 +81,23 @@ engine.set_context_formatter(Box::new(MyFormatter)); // how to format the prompt
 | Flag | Default | Enables |
 |------|---------|---------|
 | `async` | on | tokio async API |
-| `store-lance` | on | LanceDB (fact memory) + LanceGraph (relationship memory) |
-| `store-duck` | on | DuckDB lifecycle brain |
+| `store-lance` | off | LanceDB (fact memory) + LanceGraph (relationship memory) |
+| `store-duck` | off | DuckDB analytics layer (Phase 3) |
 | `embedding-local` | off | mistral.rs local inference |
 | `audit-bridge` | off | tamper-evident writes via edgesentry-audit |
-| `pyo3-bindings` | off | Python bindings for arktrace |
+| `pyo3-bindings` | off | Python bindings |
 
-No storage dependencies (in-memory only):
+The default build includes only the async runtime, in-memory stores, and zero-copy traits — no native libraries required. Enable backends as needed:
 
 ```toml
-membrane = { version = "0.1", default-features = false }
+# In-memory only (traits + WorkingMemory + InMemoryFactStore)
+membrid-rs = "0.0.1"
+
+# With LanceDB vector store
+membrid-rs = { version = "0.0.1", features = ["store-lance"] }
+
+# Full stack
+membrid-rs = { version = "0.0.1", features = ["store-lance", "embedding-local"] }
 ```
 
 ---
