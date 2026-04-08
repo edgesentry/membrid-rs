@@ -232,11 +232,11 @@ mod tests {
         let store = InMemoryFactStore::new(facts_schema());
 
         let ep = make_episode("original", vec![1.0; 768]);
-        let batch = episodes_to_record_batch(&[ep.clone()], 768).unwrap();
+        let batch = episodes_to_record_batch(std::slice::from_ref(&ep), 768).unwrap();
         store.insert(batch).await.unwrap();
 
         // Re-insert same id — store should still have 1 row.
-        let batch2 = episodes_to_record_batch(&[ep], 768).unwrap();
+        let batch2 = episodes_to_record_batch(std::slice::from_ref(&ep), 768).unwrap();
         store.insert(batch2).await.unwrap();
 
         assert_eq!(store.len(), 1);
