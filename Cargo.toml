@@ -25,7 +25,7 @@ uuid = { version = "1", features = ["v4"] }
 # Arrow is always present — it is the IO common language
 arrow-array  = { version = "53" }
 arrow-buffer = { version = "53" }
-arrow-schema = { version = "53" }
+arrow-schema = { version = "58" }
 
 tokio = { version = "1", features = ["rt", "sync", "macros", "time"], optional = true }
 
