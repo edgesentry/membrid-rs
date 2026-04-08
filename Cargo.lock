@@ -4995,7 +4995,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "membrids-rs"
+name = "membrid-rs"
 version = "0.0.1"
 dependencies = [
  "arrow-array 53.4.0",
