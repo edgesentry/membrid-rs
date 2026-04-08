@@ -1,4 +1,4 @@
-use membrid::{
+use membrids_rs::{
     memory::working::{OverflowStrategy, WorkingMemory},
     types::{Episode, MemoryTier, Role},
 };

@@ -1,12 +1,17 @@
 [package]
-name = "membrid"
+name = "membrids-rs"
 version = "0.0.1"
 edition = "2024"
+rust-version = "1.85"
 description = "LLM memory management for edge AI with small models"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/edgesentry/membrid-rs"
+readme = "README.md"
+keywords = ["llm", "memory", "vector", "edge-ai", "lance"]
+categories = ["database", "data-structures"]
 
 [features]
-default = ["async", "store-lance", "store-duck"]
+default = ["async"]
 async = ["dep:tokio"]
 embedding-local = ["dep:mistralrs", "dep:mistralrs-core"]
 store-lance = ["dep:lancedb", "dep:arrow-cast"]
