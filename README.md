@@ -35,7 +35,7 @@ Together: a membrane that manages information selection, built on a hybrid of st
 ## Quick start
 
 ```rust
-use membrids_rs::{MembraneEngine, MembraneConfig, Episode, Role};
+use membrid::{MembraneEngine, MembraneConfig, Episode, Role};
 
 let engine = MembraneEngine::open("./data/memory", MembraneConfig::default()).await?;
 
@@ -91,13 +91,13 @@ The default build includes only the async runtime, in-memory stores, and zero-co
 
 ```toml
 # In-memory only (traits + WorkingMemory + InMemoryFactStore)
-membrids-rs = "0.0.1"
+membrid-rs = "0.0.1"
 
 # With LanceDB vector store
-membrids-rs = { version = "0.0.1", features = ["store-lance"] }
+membrid-rs = { version = "0.0.1", features = ["store-lance"] }
 
 # Full stack
-membrids-rs = { version = "0.0.1", features = ["store-lance", "embedding-local"] }
+membrid-rs = { version = "0.0.1", features = ["store-lance", "embedding-local"] }
 ```
 
 ---

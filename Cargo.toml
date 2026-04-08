@@ -1,5 +1,5 @@
 [package]
-name = "membrids-rs"
+name = "membrid-rs"
 version = "0.0.1"
 edition = "2024"
 rust-version = "1.85"
@@ -16,6 +16,9 @@ async = ["dep:tokio"]
 embedding-local = ["dep:mistralrs", "dep:mistralrs-core"]
 store-lance = ["dep:lancedb", "dep:arrow-cast"]
 store-duck = ["dep:duckdb"]
+
+[lib]
+name = "membrid"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
