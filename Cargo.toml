@@ -34,7 +34,7 @@ uuid = { version = "1", features = ["v4"] }
 arrow-array  = { version = "53" }
 arrow-buffer = { version = "53" }
 arrow-schema = { version = "53" }
-arrow-select = { version = "53" }
+arrow-select = { version = "58" }
 
 tokio = { version = "1", features = ["rt", "sync", "macros", "time"], optional = true }
 
